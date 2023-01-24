@@ -1,11 +1,18 @@
 {
     "require": {
         "laminas/laminas-diactoros": "^2.24",
-        "psr/http-server-middleware": "^1.0"
+        "psr/http-server-middleware": "^1.0",
+        "illuminate/container": "^9.48",
+        "psr/event-dispatcher": "^1.0",
+        "ext-sockets": "*",
+        "react/http": "^1.8"
     },
     "autoload": {
         "psr-4": {
             "PsrImplement\\": "PSR-implement"
         }
+    },
+    "require-dev": {
+        "paulxu-cn/event-ide-helper": "^0.1.0"
     }
 }

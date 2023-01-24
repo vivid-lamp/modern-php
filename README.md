@@ -21,40 +21,42 @@ xdebug.mode = debug
 xdebug.client_host = 127.0.0.1
 ; 9003 是默认端口
 xdebug.client_port = 9003
-xdebug.trigger_value = trigger
+xdebug.idekey = aa,bb
 ```
 
 ### 1.1.2 vscode 配置
 
 在 vscode 中安装 PHP Debug 插件，点击左侧调试图标，编辑 launch.json 文件，configurations 属性的配置如下：
 ```json
-"configurations": [
+{ 
+  "configurations": [
     {
-        "name": "Listen for Xdebug",
-        "type": "php",
-        "request": "launch",
-        "port": 9003,
-        "pathMappings": {
-            "~/www": "${workspaceFolder}",
-        }
+      "name": "Listen for Xdebug",
+      "type": "php",
+      "request": "launch",
+      "port": 9003,
+      "pathMappings": {
+        "~/www": "${workspaceFolder}"
+      }
     },
     {
-        "name": "Launch currently open script",
-        "type": "php",
-        "request": "launch",
-        "program": "${file}",
-        "cwd": "${fileDirname}",
-        "port": 0,
-        "runtimeArgs": [
-            "-dxdebug.start_with_request=yes"
-        ],
-        "externalConsole": true,
-        "env": {
-            "XDEBUG_MODE": "debug,develop",
-            "XDEBUG_CONFIG": "client_port=${port}"
-        }
+      "name": "Launch currently open script",
+      "type": "php",
+      "request": "launch",
+      "program": "${file}",
+      "cwd": "${fileDirname}",
+      "port": 0,
+      "runtimeArgs": [
+        "-dxdebug.start_with_request=yes"
+      ],
+      "externalConsole": true,
+      "env": {
+        "XDEBUG_MODE": "debug,develop",
+        "XDEBUG_CONFIG": "client_port=${port}"
+      }
     }
-]
+  ]
+}
 ```
 configurations 属性是一个数组，数组的第 0 个元素用来调试 cgi（包括 cli-server) 程序，第 1 个元素用来调试 cli 程序。数组元素的 port 属性是插件监听 Xdebug 的端口，pathMapping 属性是远程文件和本地文件的映射，本地调试无需配置 pathMapping。
 
@@ -62,7 +64,7 @@ configurations 属性是一个数组，数组的第 0 个元素用来调试 cgi�
 
 ### 1.1.3 验证
 上述内容配置好之后，在 vscode 中打好断点。  
-- **cgi 程序**：启动你的 PHP web 站点，在 vscode 中选择 Listen for Xdebug 启动监听，然后在浏览器 / postman 中访问你的站点，就可以断点调试了。访问时须在 Query String 或 FormData 或 COOKIE 中带上 XDEBUG_TRIGGER=my_trigger_value 的参数。
+- **cgi 程序**：启动你的 PHP web 站点，在 vscode 中选择 Listen for Xdebug 启动监听，然后在浏览器 / postman 中访问你的站点，就可以断点调试了。访问时须在 Query String 或 FormData 或 COOKIE 中带上 XDEBUG_SESSION=aa (or bb) 的参数。
 - **cli 程序**：在 vscode 中打开需要调试的 PHP 脚本，选择 Launch currently open script 点击 start 按钮就可以运行程序并调试了。
 
 本节参考链接：  
@@ -118,8 +120,7 @@ PHP 文档 <https://www.php.net/manual/zh/language.errors.php7.php>
 
 在程序的尽量最外层（或者最开始）调用以下代码，可以解捕获并处理绝大部分的错误和异常。在此之前发生的错误无法处理，也没必要。
 ```php
-set_error_handler(
-    function (
+set_error_handler(function (
         int $errno,
         string $errstr,
         string $errfile,
@@ -288,51 +289,50 @@ composer create-project vivid-lamp/pipe-skeleton
 ## 3.1 异步编程
 ### 3.1.1 IO 复用
 >目前常见的IO多路复用方案有select、poll、epoll、kqueue.
->+ select 是*NIX出现较早的IO复用方案，有较大缺陷
->+ poll 是select的升级版，但依然属于新瓶旧酒
->+ epoll 是*NIX下终极解决方案，而kqueue则是Mac、BSD下同级别的方案
+>+ select 是 *NIX 出现较早的 IO 复用方案，有较大缺陷
+>+ poll 是 select 的升级版，但依然属于新瓶旧酒
+>+ epoll 是 *NIX 下终极解决方案，而 kqueu 则是 Mac、BSD 下同级别的方案
 ### 3.1.2 ext-event
-libevent For PHP
-参考代码 examples/0-ext-event.php
-### 3.1.3 ReactPHP
-> ReactPHP 是一个用于PHP中事件驱动编程的底层库。其核心是一个事件循环，在此基础上，它提供了低级实用工具，如：流抽象、异步 DNS 解析器、网络客户端/服务器、HTTP 客户端/服务器以及与进程的交互。第三方库可以使用这些组件来创建异步网络客户端/服务器等等。
-
-ReactPHP Http 配合 friends-of-reactphp/mysql 实现异步非阻塞的 Http 服务，参考代码 examples/1-reactphp-http-server.php
-
-## 3.2 迭代生成器配合 Promise 实现协程
-### 3.2.1 yield 生成器
+libevent For PHP  
+参考代码  
++ HTTP Server：asynchronous/0-stream-event.php  
++ HTTP Client：asynchronous/1-http-client.php
+### 3.1.3 Yield 与协程
+#### yield 生成器
 需要理解清楚 yield 生成器的进进出出。
 ```php
 <?php
-$generation = (function() {
-    $bar = 'a';
-    $a = yield $bar;
-    echo $a, PHP_EOL;
-    $b = yield 'b';
-    echo $b, PHP_EOL;
-    $c = yield 'c';
-    echo $c, PHP_EOL;
+$generation = (function () {
+    $v1 = yield 'a';
+    echo $v1, PHP_EOL;
+    $v2 = yield 'b';
+    echo $v2, PHP_EOL;
+    $v3 = yield 'c';
+    echo $v3, PHP_EOL;
 })();
 
-$i = 0;
 
 echo $generation->current(), PHP_EOL;
 
-echo $generation->send($i++), PHP_EOL;
-echo $generation->send($i++), PHP_EOL;
-$generation->send($i++);
+echo $generation->send(1), PHP_EOL;
+echo $generation->send(2), PHP_EOL;
+$generation->send(3);
 
 // 执行结果：
 // a
-// 0
-// b
 // 1
-// c
+// b
 // 2
+// c
+// 3
 ```
 从生成器往外返出 3 个值，分别是 a, b, c。从外面往生成器发送了三个值分别是 0, 1, 2。
-### 3.2.2 yield 实现协程
-参考代码 examples/3-reactphp-http-server-yield.php
+#### 参考代码
++ yield 示例：asynchronous/2-yield.php
++ yield 协程 HTTP Client：asynchronous/3-http-client-yield.php
+### 3.1.4 Fiber 纤程
+参考代码  
+asynchronous/4-http-client-fiber.php  
 
 本章参考链接：  
 老李秀网络编程系列博客 <https://mp.weixin.qq.com/mp/appmsgalbum?__biz=MzU4MjgzNzk5MA==&action=getalbum&album_id=1555216066405023744&scene=173&from_msgid=2247484575&from_itemidx=1&count=3&nolastread=1#wechat_redirect>  

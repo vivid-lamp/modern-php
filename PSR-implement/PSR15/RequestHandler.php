@@ -10,8 +10,7 @@ use Psr\Http\Server\MiddlewareInterface;
 
 class RequestHandler implements RequestHandlerInterface
 {
-
-    /** @var MiddlewareInterface[] */
+    /** @var Iterable<MiddlewareInterface> */
     protected $queue;
 
     public function __construct(Iterable $queue)

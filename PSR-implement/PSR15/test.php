@@ -11,11 +11,9 @@ require __DIR__ . '/../../vendor/autoload.php';
 $queue[] = new Bar();
 $queue[] = new Foo();
 
-
+$requestHandler = new RequestHandler($queue);
 
 $request =  ServerRequestFactory::fromGlobals($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES);
-
-$requestHandler = new RequestHandler($queue);
 
 $response = $requestHandler->handle($request);
 

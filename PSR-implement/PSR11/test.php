@@ -41,7 +41,7 @@ class Bar
 }
 
 if (strtolower($_SERVER['REQUEST_URI']) != '/injecttomethod') {
-    /** @var Foo */
+    /** @var Foo $foo */
     $foo = $container->make(Foo::class);
     $response = $foo->api();
 } else {
